@@ -13,7 +13,7 @@ def create_app():
 
     app = Flask(__name__)
 
-    # Safe config (no crash if env missing)
+    # Safe config (no crash if env missing )
     app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/test")
     app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
 

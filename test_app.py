@@ -8,7 +8,7 @@ def client():
     app.config["MONGO_URI"] = "mongodb+srv://avinashsain65_db_user:TGyVdGAv1aYyOgqi@herocluster1.csewjfm.mongodb.net/flask_db"  # test DB
     client = app.test_client()
 
-    # Setup: clear and create test data
+    # Setup: clear and create test data 
     with app.app_context():
         mongo.db.students.delete_many({})
         mongo.db.students.insert_one({
