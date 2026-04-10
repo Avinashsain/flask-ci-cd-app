@@ -1,0 +1,49 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Logs
+*.log
+
+# SQLite DB
+db.sqlite3
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Testing / coverage
+.coverage*
+.pytest_cache/
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+
+# Type check / lint
+.mypy_cache/
+.ruff_cache/
+
+# OS files
+.DS_Store
+
+# Misc
+instance/
