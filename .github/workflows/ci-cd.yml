@@ -35,16 +35,15 @@ jobs:
       run: |
         pip install pylint bandit pytest
 
-    # Linting (optional fail-safe)
     - name: Run Pylint
       run: pylint app.py || true
 
-    # Security Scan (Bandit fixed)
     - name: Run Bandit Security Scan
       run: bandit -r . -s B104,B101
 
-    # Run tests
     - name: Run Pytest
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: pytest -v
 
 
@@ -62,10 +61,14 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
+    # 🔥 AUTO CREATE .env FILE HERE
     - name: Deploy to Staging Server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
           cd /var/www/flask-app &&
+
+          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env &&
+
           git fetch --all &&
           git reset --hard origin/staging &&
           sudo systemctl restart flask-app
@@ -86,10 +89,14 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
+    # 🔥 AUTO CREATE .env FILE HERE
     - name: Deploy to Production Server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} "
           cd /var/www/flask-app &&
+
+          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env &&
+
           git fetch --all &&
           git reset --hard origin/master &&
           sudo systemctl restart flask-app
