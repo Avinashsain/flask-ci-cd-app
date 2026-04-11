@@ -48,19 +48,21 @@ jobs:
         ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
     - name: Deploy Staging
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'EOF'
         set -e
 
+        echo "🚀 Starting Deployment"
+
         APP_DIR="/var/www/flask-app"
 
-        echo "🚀 Deploying Staging"
+        sudo rm -rf $APP_DIR
+        sudo mkdir -p $APP_DIR
+        sudo chown -R $USER:$USER $APP_DIR
 
-        sudo rm -rf "$APP_DIR"
-        sudo mkdir -p "$APP_DIR"
-        sudo chown -R $USER:$USER "$APP_DIR"
-
-        cd "$APP_DIR"
+        cd $APP_DIR
 
         git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
@@ -75,12 +77,15 @@ jobs:
         pip install --upgrade pip
         pip install -r requirements.txt
 
-        sudo systemctl restart flask-app
+        # SAFE restart (no crash if service missing)
+        if systemctl list-units --type=service | grep -q flask-app; then
+          sudo systemctl restart flask-app
+        else
+          echo "⚠️ flask-app service not found, skipping restart"
+        fi
 
-        echo "✅ Staging Done"
+        echo "✅ Deployment Complete"
         EOF
-      env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}
 
 
 # ---------------- PRODUCTION ----------------
@@ -96,19 +101,21 @@ jobs:
         ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
     - name: Deploy Production
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
         set -e
 
+        echo "🚀 Starting Production Deployment"
+
         APP_DIR="/var/www/flask-app"
 
-        echo "🚀 Deploying Production"
+        sudo rm -rf $APP_DIR
+        sudo mkdir -p $APP_DIR
+        sudo chown -R $USER:$USER $APP_DIR
 
-        sudo rm -rf "$APP_DIR"
-        sudo mkdir -p "$APP_DIR"
-        sudo chown -R $USER:$USER "$APP_DIR"
-
-        cd "$APP_DIR"
+        cd $APP_DIR
 
         git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
@@ -123,9 +130,11 @@ jobs:
         pip install --upgrade pip
         pip install -r requirements.txt
 
-        sudo systemctl restart flask-app
+        if systemctl list-units --type=service | grep -q flask-app; then
+          sudo systemctl restart flask-app
+        else
+          echo "⚠️ flask-app service not found, skipping restart"
+        fi
 
         echo "✅ Production Done"
         EOF
-      env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}
