@@ -13,8 +13,11 @@ permissions:
 
 jobs:
 
+# ---------------- CI PIPELINE ----------------
   ci:
     runs-on: ubuntu-latest
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
 
     steps:
     - name: Checkout Code
@@ -41,93 +44,78 @@ jobs:
     - name: Run Bandit Security Scan
       run: bandit -r . -s B104,B101
 
-    - name: Run Tests
-      env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}
+    - name: Run Pytest
       run: pytest -v
 
 
+# ---------------- DEPLOY STAGING ----------------
   deploy-staging:
     needs: ci
     if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup SSH Agent
-      uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
-
     - name: Deploy to Staging Server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'EOF'
           set -e
 
-          echo "Starting Staging Deployment..."
+          echo "🚀 Starting Staging Deployment"
 
+          # Create folder
           mkdir -p /var/www/flask-app
           cd /var/www/flask-app
 
-          # Clone repo if not exists
+          # Clone or update repo safely
           if [ ! -d .git ]; then
             git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
+          else
+            git fetch --all
+            git reset --hard origin/staging
           fi
 
-          # Pull latest code
-          git fetch --all
-          git reset --hard origin/staging
-
           # Create .env file
-          echo "MONGO_URI=${MONGO_URI}" > .env
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
 
           # Install dependencies
           pip3 install -r requirements.txt
 
-          # Restart service
+          # Restart app
           sudo systemctl restart flask-app
 
-          echo "Staging Deployment Done"
+          echo "✅ Staging Deployment Complete"
         EOF
 
 
+# ---------------- DEPLOY PRODUCTION ----------------
   deploy-production:
     needs: ci
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup SSH Agent
-      uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
-
     - name: Deploy to Production Server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
           set -e
 
-          echo "Starting Production Deployment..."
+          echo "🚀 Starting Production Deployment"
 
           mkdir -p /var/www/flask-app
           cd /var/www/flask-app
 
-          # Clone repo if not exists
           if [ ! -d .git ]; then
             git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
+          else
+            git fetch --all
+            git reset --hard origin/master
           fi
 
-          # Pull latest code
-          git fetch --all
-          git reset --hard origin/master
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
 
-          # Create .env file
-          echo "MONGO_URI=${MONGO_URI}" > .env
-
-          # Install dependencies
           pip3 install -r requirements.txt
 
-          # Restart service
           sudo systemctl restart flask-app
 
-          echo "Production Deployment Done"
+          echo "✅ Production Deployment Complete"
         EOF
