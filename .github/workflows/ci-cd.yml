@@ -58,8 +58,10 @@ jobs:
 
     steps:
     - name: Deploy to Staging Server
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << EOF
           set -e
 
           echo "🚀 Starting Staging Deployment"
@@ -69,7 +71,6 @@ jobs:
           mkdir -p $APP_DIR
           cd $APP_DIR
 
-          # Fix permissions (important for EC2)
           sudo chown -R $USER:$USER $APP_DIR
 
           # Clone or update repo safely
@@ -80,10 +81,8 @@ jobs:
             git reset --hard origin/staging
           fi
 
-          # Create .env file safely
-          cat > .env <<EOL
-          MONGO_URI=${{ secrets.MONGO_URI }}
-          EOL
+          # Create .env safely (NO indentation!)
+          echo "MONGO_URI=$MONGO_URI" > .env
 
           # Install dependencies
           pip3 install -r requirements.txt
@@ -103,8 +102,10 @@ jobs:
 
     steps:
     - name: Deploy to Production Server
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << EOF
           set -e
 
           echo "🚀 Starting Production Deployment"
@@ -123,9 +124,7 @@ jobs:
             git reset --hard origin/master
           fi
 
-          cat > .env <<EOL
-          MONGO_URI=${{ secrets.MONGO_URI }}
-          EOL
+          echo "MONGO_URI=$MONGO_URI" > .env
 
           pip3 install -r requirements.txt
 
