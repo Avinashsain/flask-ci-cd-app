@@ -44,6 +44,7 @@ def create_app():
                 {
                     "name": request.form["name"],
                     "email": request.form["email"],
+                    "address": request.form["address"],
                     "course": request.form["course"],
                 }
             )
@@ -62,6 +63,7 @@ def create_app():
                     "$set": {
                         "name": request.form["name"],
                         "email": request.form["email"],
+                        "address": request.form["address"],
                         "course": request.form["course"],
                     }
                 },
