@@ -3,8 +3,13 @@ name: Flask CI/CD Pipeline
 on:
   push:
     branches: [master, staging]
+    tags:
+      - "v*"
   pull_request:
     branches: [master]
+
+permissions:
+  contents: read
 
 jobs:
 
@@ -19,30 +24,33 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+        cache: 'pip'
 
     - name: Install Dependencies
       run: |
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    # Code Formatting Check
-    - name: Check formatting (Black)
+    - name: Install Dev Tools
       run: |
-        black --check .
+        pip install black pylint bandit pytest
+
+    # Formatting Check
+    - name: Black Format Check
+      run: black --check .
 
     # Linting
-    - name: Lint code (Pylint)
-      run: |
-        pylint app.py || true
+    - name: Run Pylint
+      run: pylint app.py
 
     # Security Scan
-    - name: Security check (Bandit)
-      run: |
-        bandit -r . || true
+    - name: Run Bandit Security Scan
+      run: bandit -r .
 
     # Run Tests
-    - name: Run Tests (Pytest)
-      run: |
-        pytest
+    - name: Run Pytest
+      run: pytest -v
+
 
   deploy-staging:
     needs: ci
@@ -50,21 +58,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Setup SSH
+    - name: Setup SSH Agent
       uses: webfactory/ssh-agent@v0.7.0
       with:
         ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
-    - name: Deploy to Staging
+    - name: Deploy to Staging Server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
           cd /var/www/flask-app &&
-          git pull origin staging &&
+          git fetch --all &&
+          git reset --hard origin/staging &&
           sudo systemctl restart flask-app
         "
+
 
   deploy-production:
     needs: ci
@@ -72,18 +82,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Setup SSH
+    - name: Setup SSH Agent
       uses: webfactory/ssh-agent@v0.7.0
       with:
         ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
-    - name: Deploy to Production
+    - name: Deploy to Production Server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} "
           cd /var/www/flask-app &&
-          git pull origin master &&
+          git fetch --all &&
+          git reset --hard origin/master &&
           sudo systemctl restart flask-app
         "

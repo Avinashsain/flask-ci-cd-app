@@ -57,6 +57,10 @@ def create_app():
     def delete_student(student_id):
         mongo.db.students.delete_one({"_id": ObjectId(student_id)})
         return redirect(url_for('index'))
+    
+    @app.route('/about')
+    def about():
+        return render_template('about.html')
 
     return app
 
