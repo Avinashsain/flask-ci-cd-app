@@ -24,17 +24,20 @@ jobs:
       with:
         python-version: '3.10'
 
-    - run: |
+    - name: Install dependencies
+      run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pylint bandit
 
-    - run: pylint app.py || true
-    - run: bandit -r . -s B104,B101
+    - name: Lint
+      run: pylint app.py || true
 
-    - run: pytest -v
-      env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}
+    - name: Security check
+      run: bandit -r . -s B104,B101
+
+    - name: Run tests
+      run: pytest -v
 
 
 # ---------------- STAGING ----------------
@@ -49,16 +52,16 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
-    - name: Deploy Staging
+    - name: Deploy to Staging
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'EOF'
         set -e
 
-        APP_DIR="/var/www/flask-app"
-
         echo "🚀 Starting Staging Deployment"
+
+        APP_DIR="/var/www/flask-app"
 
         # SAFE CLEAN
         sudo rm -rf $APP_DIR
@@ -70,13 +73,14 @@ jobs:
         # CLONE
         git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-        # ENV FILE
+        # FIXED ENV (IMPORTANT)
         echo "MONGO_URI=${MONGO_URI}" > .env
 
-        # FIX PYTHON ENV
+        # INSTALL SYSTEM DEPENDENCIES
         sudo apt update
         sudo apt install -y python3-venv python3-pip
 
+        # VENV SETUP
         python3 -m venv venv
         source venv/bin/activate
 
@@ -87,10 +91,10 @@ jobs:
         if systemctl list-units --type=service | grep -q flask-app; then
           sudo systemctl restart flask-app
         else
-          echo "⚠️ flask-app service not found (skip restart)"
+          echo "⚠️ flask-app service not found"
         fi
 
-        echo "✅ Staging Done"
+        echo "✅ Staging Deployment Done"
         EOF
 
 
@@ -106,16 +110,16 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
-    - name: Deploy Production
+    - name: Deploy to Production
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
         set -e
 
-        APP_DIR="/var/www/flask-app"
-
         echo "🚀 Starting Production Deployment"
+
+        APP_DIR="/var/www/flask-app"
 
         sudo rm -rf $APP_DIR
         sudo mkdir -p $APP_DIR
@@ -139,8 +143,8 @@ jobs:
         if systemctl list-units --type=service | grep -q flask-app; then
           sudo systemctl restart flask-app
         else
-          echo "⚠️ flask-app service not found (skip restart)"
+          echo "⚠️ flask-app service not found"
         fi
 
-        echo "✅ Production Done"
+        echo "✅ Production Deployment Done"
         EOF
