@@ -24,7 +24,7 @@ jobs:
       with:
         python-version: "3.10"
 
-    - name: Install & Test
+    - name: Install dependencies
       run: |
         pip install --upgrade pip
         pip install -r requirements.txt
@@ -51,25 +51,35 @@ jobs:
     - name: Deploy Staging
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
-          set -e
+        set -e
 
-          APP_DIR=/var/www/flask-app
-          sudo mkdir -p \$APP_DIR
-          sudo chown -R \$USER:\$USER \$APP_DIR
-          cd \$APP_DIR
+        APP_DIR=/var/www/flask-app
 
-          if [ ! -d .git ]; then
-            git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
-          else
-            git fetch --all
-            git reset --hard origin/staging
-            git clean -fd
-          fi
+        sudo mkdir -p \$APP_DIR
+        sudo chown -R \$USER:\$USER \$APP_DIR
+        cd \$APP_DIR
 
-          echo \"MONGO_URI=${{ secrets.MONGO_URI }}\" > .env
+        if [ ! -d .git ]; then
+          git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
+        else
+          git fetch --all
+          git reset --hard origin/staging
+          git clean -fd
+        fi
 
-          pip3 install -r requirements.txt
-          sudo systemctl restart flask-app
+        echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
+
+        # 🔥 FIX: venv for Ubuntu 24
+        if [ ! -d venv ]; then
+          python3 -m venv venv
+        fi
+
+        source venv/bin/activate
+
+        pip install --upgrade pip
+        pip install -r requirements.txt
+
+        sudo systemctl restart flask-app
         "
 
 # ---------------- PRODUCTION ----------------
@@ -86,23 +96,32 @@ jobs:
     - name: Deploy Production
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} "
-          set -e
+        set -e
 
-          APP_DIR=/var/www/flask-app
-          sudo mkdir -p \$APP_DIR
-          sudo chown -R \$USER:\$USER \$APP_DIR
-          cd \$APP_DIR
+        APP_DIR=/var/www/flask-app
 
-          if [ ! -d .git ]; then
-            git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
-          else
-            git fetch --all
-            git reset --hard origin/master
-            git clean -fd
-          fi
+        sudo mkdir -p \$APP_DIR
+        sudo chown -R \$USER:\$USER \$APP_DIR
+        cd \$APP_DIR
 
-          echo \"MONGO_URI=${{ secrets.MONGO_URI }}\" > .env
+        if [ ! -d .git ]; then
+          git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
+        else
+          git fetch --all
+          git reset --hard origin/master
+          git clean -fd
+        fi
 
-          pip3 install -r requirements.txt
-          sudo systemctl restart flask-app
+        echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
+
+        if [ ! -d venv ]; then
+          python3 -m venv venv
+        fi
+
+        source venv/bin/activate
+
+        pip install --upgrade pip
+        pip install -r requirements.txt
+
+        sudo systemctl restart flask-app
         "
