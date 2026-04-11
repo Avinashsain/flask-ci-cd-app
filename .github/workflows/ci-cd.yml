@@ -47,14 +47,14 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
-    - name: Deploy
+    - name: Deploy Staging
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << EOF
         set -e
 
         APP_DIR=/var/www/flask-app
 
-        echo "Deploying Flask App"
+        echo "Deploying Staging"
 
         sudo rm -rf $APP_DIR
         mkdir -p $APP_DIR
@@ -62,10 +62,11 @@ jobs:
 
         git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-        echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
+        # SAFE ENV creation (IMPORTANT FIX)
+        echo "MONGO_URI=${MONGO_URI}" > .env
 
         sudo apt update
-        sudo apt install -y python3-venv
+        sudo apt install -y python3-venv python3-pip
 
         python3 -m venv venv
         source venv/bin/activate
@@ -75,8 +76,10 @@ jobs:
 
         sudo systemctl restart flask-app
 
-        echo "Deployment Done"
+        echo "Staging Done"
         EOF
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
 
 
 # ---------------- PRODUCTION ----------------
@@ -91,9 +94,9 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
-    - name: Deploy
+    - name: Deploy Production
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << EOF
         set -e
 
         APP_DIR=/var/www/flask-app
@@ -106,10 +109,10 @@ jobs:
 
         git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-        echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
+        echo "MONGO_URI=${MONGO_URI}" > .env
 
         sudo apt update
-        sudo apt install -y python3-venv
+        sudo apt install -y python3-venv python3-pip
 
         python3 -m venv venv
         source venv/bin/activate
@@ -121,3 +124,5 @@ jobs:
 
         echo "Production Done"
         EOF
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
