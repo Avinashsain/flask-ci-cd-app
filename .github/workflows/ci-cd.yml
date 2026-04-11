@@ -3,8 +3,6 @@ name: Flask CI/CD Pipeline
 on:
   push:
     branches: [master, staging]
-    tags:
-      - "v*"
 
 permissions:
   contents: read
@@ -22,10 +20,9 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: '3.10'
 
-    - name: Install dependencies
-      run: |
+    - run: |
         pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pylint bandit
@@ -37,6 +34,7 @@ jobs:
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
 
+
 # ---------------- STAGING ----------------
   deploy-staging:
     needs: ci
@@ -44,43 +42,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: webfactory/ssh-agent@v0.7.0
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
       with:
         ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
-    - name: Deploy Staging
+    - name: Deploy
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
+        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'EOF'
         set -e
 
         APP_DIR=/var/www/flask-app
 
-        sudo mkdir -p \$APP_DIR
-        sudo chown -R \$USER:\$USER \$APP_DIR
-        cd \$APP_DIR
+        echo "Deploying Flask App"
 
-        if [ ! -d .git ]; then
-          git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
-        else
-          git fetch --all
-          git reset --hard origin/staging
-          git clean -fd
-        fi
+        sudo rm -rf $APP_DIR
+        mkdir -p $APP_DIR
+        cd $APP_DIR
 
-        echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
+        git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-        # 🔥 FIX: venv for Ubuntu 24
-        if [ ! -d venv ]; then
-          python3 -m venv venv
-        fi
+        echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
 
+        sudo apt update
+        sudo apt install -y python3-venv
+
+        python3 -m venv venv
         source venv/bin/activate
 
         pip install --upgrade pip
         pip install -r requirements.txt
 
         sudo systemctl restart flask-app
-        "
+
+        echo "Deployment Done"
+        EOF
+
 
 # ---------------- PRODUCTION ----------------
   deploy-production:
@@ -89,39 +86,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: webfactory/ssh-agent@v0.7.0
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
       with:
         ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
-    - name: Deploy Production
+    - name: Deploy
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} "
+        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
         set -e
 
         APP_DIR=/var/www/flask-app
 
-        sudo mkdir -p \$APP_DIR
-        sudo chown -R \$USER:\$USER \$APP_DIR
-        cd \$APP_DIR
+        echo "Deploying Production"
 
-        if [ ! -d .git ]; then
-          git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
-        else
-          git fetch --all
-          git reset --hard origin/master
-          git clean -fd
-        fi
+        sudo rm -rf $APP_DIR
+        mkdir -p $APP_DIR
+        cd $APP_DIR
 
-        echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
+        git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-        if [ ! -d venv ]; then
-          python3 -m venv venv
-        fi
+        echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
 
+        sudo apt update
+        sudo apt install -y python3-venv
+
+        python3 -m venv venv
         source venv/bin/activate
 
         pip install --upgrade pip
         pip install -r requirements.txt
 
         sudo systemctl restart flask-app
-        "
+
+        echo "Production Done"
+        EOF
