@@ -55,23 +55,25 @@ jobs:
     steps:
     - name: Deploy to Staging Server
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
-          mkdir -p /var/www/flask-app &&
+        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'EOF'
+          set -e
+
+          mkdir -p /var/www/flask-app
           cd /var/www/flask-app
 
           if [ ! -d .git ]; then
             git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
           fi
 
-          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
-
           git fetch --all
           git reset --hard origin/staging
+
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
 
           pip3 install -r requirements.txt
 
           sudo systemctl restart flask-app
-        "
+        EOF
 
 
   deploy-production:
@@ -82,20 +84,22 @@ jobs:
     steps:
     - name: Deploy to Production Server
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} "
-          mkdir -p /var/www/flask-app &&
+        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
+          set -e
+
+          mkdir -p /var/www/flask-app
           cd /var/www/flask-app
 
           if [ ! -d .git ]; then
             git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
           fi
 
-          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
-
           git fetch --all
           git reset --hard origin/master
+
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
 
           pip3 install -r requirements.txt
 
           sudo systemctl restart flask-app
-        "
+        EOF
