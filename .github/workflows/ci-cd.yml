@@ -5,52 +5,40 @@ on:
     branches: [master, staging]
     tags:
       - "v*"
-  pull_request:
-    branches: [master]
 
 permissions:
   contents: read
 
-
-# ---------------- CI PIPELINE ----------------
 jobs:
+
+# ---------------- CI ----------------
   ci:
     runs-on: ubuntu-latest
     env:
       MONGO_URI: ${{ secrets.MONGO_URI }}
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        cache: 'pip'
 
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
+    - run: |
+        pip install --upgrade pip
         pip install -r requirements.txt
+        pip install pytest pylint bandit
 
-    - name: Install Dev Tools
-      run: |
-        pip install pylint bandit pytest
+    - run: pylint app.py || true
 
-    - name: Run Pylint
-      run: pylint app.py || true
+    - run: bandit -r . -s B104,B101
 
-    - name: Run Bandit Security Scan
-      run: bandit -r . -s B104,B101
-
-    - name: Run Pytest
+    - run: pytest -v
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
-      run: pytest -v
 
 
-# ---------------- DEPLOY STAGING ----------------
+# ---------------- STAGING ----------------
   deploy-staging:
     needs: ci
     if: github.ref == 'refs/heads/staging'
@@ -62,24 +50,20 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
-    - name: Deploy to Staging Server
-      env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}
+    - name: Deploy
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << EOF
+        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
           set -e
 
-          echo "Starting Staging Deployment"
+          APP_DIR=/var/www/flask-app
 
-          APP_DIR="/var/www/flask-app"
+          echo '🚀 Starting Deployment'
 
-          mkdir -p $APP_DIR
-          cd $APP_DIR
+          sudo mkdir -p \$APP_DIR
+          sudo chown -R \$USER:\$USER \$APP_DIR
 
-          # Fix permissions
-          sudo chown -R $USER:$USER $APP_DIR
+          cd \$APP_DIR
 
-          # Clone or update repo
           if [ ! -d .git ]; then
             git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
           else
@@ -87,20 +71,17 @@ jobs:
             git reset --hard origin/staging
           fi
 
-          # Create .env safely
-          echo "MONGO_URI=$MONGO_URI" > .env
+          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
 
-          # Install dependencies
           pip3 install -r requirements.txt
 
-          # Restart service
           sudo systemctl restart flask-app
 
-          echo "Staging Deployment Done"
-        EOF
+          echo '✅ Done'
+        "
 
 
-# ---------------- DEPLOY PRODUCTION ----------------
+# ---------------- PRODUCTION ----------------
   deploy-production:
     needs: ci
     if: startsWith(github.ref, 'refs/tags/')
@@ -112,21 +93,19 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
 
-    - name: Deploy to Production Server
-      env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}
+    - name: Deploy
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << EOF
+        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} "
           set -e
 
-          echo "Starting Production Deployment"
+          APP_DIR=/var/www/flask-app
 
-          APP_DIR="/var/www/flask-app"
+          echo '🚀 Starting Production Deployment'
 
-          mkdir -p $APP_DIR
-          cd $APP_DIR
+          sudo mkdir -p \$APP_DIR
+          sudo chown -R \$USER:\$USER \$APP_DIR
 
-          sudo chown -R $USER:$USER $APP_DIR
+          cd \$APP_DIR
 
           if [ ! -d .git ]; then
             git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
@@ -135,11 +114,11 @@ jobs:
             git reset --hard origin/master
           fi
 
-          echo "MONGO_URI=$MONGO_URI" > .env
+          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
 
           pip3 install -r requirements.txt
 
           sudo systemctl restart flask-app
 
-          echo "Production Deployment Done"
-        EOF
+          echo '✅ Done'
+        "
