@@ -45,6 +45,8 @@ jobs:
       run: bandit -r . -s B104,B101
 
     - name: Run Pytest
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: pytest -v
 
 
@@ -62,9 +64,13 @@ jobs:
 
           echo "🚀 Starting Staging Deployment"
 
-          # Create folder
-          mkdir -p /var/www/flask-app
-          cd /var/www/flask-app
+          APP_DIR="/var/www/flask-app"
+
+          mkdir -p $APP_DIR
+          cd $APP_DIR
+
+          # Fix permissions (important for EC2)
+          sudo chown -R $USER:$USER $APP_DIR
 
           # Clone or update repo safely
           if [ ! -d .git ]; then
@@ -74,13 +80,15 @@ jobs:
             git reset --hard origin/staging
           fi
 
-          # Create .env file
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
+          # Create .env file safely
+          cat > .env <<EOL
+          MONGO_URI=${{ secrets.MONGO_URI }}
+          EOL
 
           # Install dependencies
           pip3 install -r requirements.txt
 
-          # Restart app
+          # Restart service
           sudo systemctl restart flask-app
 
           echo "✅ Staging Deployment Complete"
@@ -101,8 +109,12 @@ jobs:
 
           echo "🚀 Starting Production Deployment"
 
-          mkdir -p /var/www/flask-app
-          cd /var/www/flask-app
+          APP_DIR="/var/www/flask-app"
+
+          mkdir -p $APP_DIR
+          cd $APP_DIR
+
+          sudo chown -R $USER:$USER $APP_DIR
 
           if [ ! -d .git ]; then
             git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
@@ -111,7 +123,9 @@ jobs:
             git reset --hard origin/master
           fi
 
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
+          cat > .env <<EOL
+          MONGO_URI=${{ secrets.MONGO_URI }}
+          EOL
 
           pip3 install -r requirements.txt
 
