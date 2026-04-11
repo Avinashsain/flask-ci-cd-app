@@ -3,6 +3,9 @@ name: Flask CI/CD Pipeline
 on:
   push:
     branches: [master, staging]
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -49,23 +52,24 @@ jobs:
 
     - name: Deploy Staging
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << EOF
+        ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} \
+          APP_DIR=/var/www/flask-app \
+          MONGO_URI="$MONGO_URI" \
+          bash -s << 'EOF'
         set -e
-
-        APP_DIR=/var/www/flask-app
 
         echo "Deploying Staging"
 
-        sudo rm -rf $APP_DIR
-        mkdir -p $APP_DIR
-        cd $APP_DIR
+        sudo rm -rf "$APP_DIR"
+        mkdir -p "$APP_DIR"
+        cd "$APP_DIR"
 
         git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-        # SAFE ENV creation (IMPORTANT FIX)
         echo "MONGO_URI=${MONGO_URI}" > .env
 
-        sudo apt update
+        sudo apt update -y
         sudo apt install -y python3-venv python3-pip
 
         python3 -m venv venv
@@ -96,22 +100,24 @@ jobs:
 
     - name: Deploy Production
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << EOF
+        ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} \
+          APP_DIR=/var/www/flask-app \
+          MONGO_URI="$MONGO_URI" \
+          bash -s << 'EOF'
         set -e
-
-        APP_DIR=/var/www/flask-app
 
         echo "Deploying Production"
 
-        sudo rm -rf $APP_DIR
-        mkdir -p $APP_DIR
-        cd $APP_DIR
+        sudo rm -rf "$APP_DIR"
+        mkdir -p "$APP_DIR"
+        cd "$APP_DIR"
 
         git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
 
         echo "MONGO_URI=${MONGO_URI}" > .env
 
-        sudo apt update
+        sudo apt update -y
         sudo apt install -y python3-venv python3-pip
 
         python3 -m venv venv
