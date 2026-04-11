@@ -10,36 +10,35 @@ from bson.objectid import ObjectId
 from dotenv import load_dotenv
 
 
-# Initialize Mongo (without app first)
 mongo = PyMongo()
 
 
 def create_app():
     """Application factory function"""
 
-    # Load environment variables
     load_dotenv()
 
     app = Flask(__name__)
 
     # Configuration
-    app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/test")
+    app.config["MONGO_URI"] = os.getenv(
+        "MONGO_URI", "mongodb://localhost:27017/test"
+    )
     app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
 
-    # Initialize MongoDB
     mongo.init_app(app)
 
     # ---------------- ROUTES ---------------- #
 
     @app.route("/")
     def index():
-        """Home page showing all students"""
+        """Home page"""
         students = mongo.db.students.find()
         return render_template("index.html", students=students)
 
     @app.route("/add", methods=["GET", "POST"])
     def add_student():
-        """Add a new student"""
+        """Add student"""
         if request.method == "POST":
             mongo.db.students.insert_one(
                 {
@@ -53,7 +52,7 @@ def create_app():
 
     @app.route("/update/<student_id>", methods=["GET", "POST"])
     def update_student(student_id):
-        """Update student details"""
+        """Update student"""
         student = mongo.db.students.find_one({"_id": ObjectId(student_id)})
 
         if request.method == "POST":
@@ -73,7 +72,7 @@ def create_app():
 
     @app.route("/delete/<student_id>")
     def delete_student(student_id):
-        """Delete a student"""
+        """Delete student"""
         mongo.db.students.delete_one({"_id": ObjectId(student_id)})
         return redirect(url_for("index"))
 
@@ -85,9 +84,15 @@ def create_app():
     return app
 
 
-# Create app instance for Gunicorn
 app = create_app()
 
-# Run locally
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # ONLY for local development
+    port = int(os.getenv("PORT", 5000))
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False
+    )
