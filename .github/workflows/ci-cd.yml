@@ -66,7 +66,7 @@ jobs:
           sudo chown -R \$USER:\$USER \$APP_DIR
           cd \$APP_DIR
 
-          git clone -b staging https://${{ secrets.GITHUB_TOKEN }}@github.com/Avinashsain/flask-ci-cd-app.git .
+          git clone -b staging https://github.com/Avinashsain/flask-ci-cd-app.git .
 
           # ENV
           echo "MONGO_URI=\$MONGO_URI" > .env
@@ -159,7 +159,7 @@ jobs:
           sudo chown -R \$USER:\$USER \$APP_DIR
           cd \$APP_DIR
 
-          git clone -b master https://${{ secrets.GITHUB_TOKEN }}@github.com/Avinashsain/flask-ci-cd-app.git .
+          git clone -b master https://github.com/Avinashsain/flask-ci-cd-app.git .
 
           echo "MONGO_URI=\$MONGO_URI" > .env
 
