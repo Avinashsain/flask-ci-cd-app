@@ -72,10 +72,11 @@ jobs:
           echo "Starting Staging Deployment"
 
           APP_DIR="/var/www/flask-app"
+
           mkdir -p $APP_DIR
           cd $APP_DIR
 
-          # Fix permissions (safe)
+          # Fix permissions
           sudo chown -R $USER:$USER $APP_DIR
 
           # Clone or update repo
@@ -121,13 +122,12 @@ jobs:
           echo "Starting Production Deployment"
 
           APP_DIR="/var/www/flask-app"
+
           mkdir -p $APP_DIR
           cd $APP_DIR
 
-          # Fix permissions
           sudo chown -R $USER:$USER $APP_DIR
 
-          # Clone or update repo
           if [ ! -d .git ]; then
             git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
           else
@@ -135,13 +135,10 @@ jobs:
             git reset --hard origin/master
           fi
 
-          # Create .env safely
           echo "MONGO_URI=$MONGO_URI" > .env
 
-          # Install dependencies
           pip3 install -r requirements.txt
 
-          # Restart service
           sudo systemctl restart flask-app
 
           echo "Production Deployment Done"
