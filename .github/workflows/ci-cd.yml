@@ -53,24 +53,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    - name: Setup SSH Agent
-      uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
-
-    # 🔥 AUTO CREATE .env FILE HERE
     - name: Deploy to Staging Server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
-          cd /var/www/flask-app &&
+          mkdir -p /var/www/flask-app &&
+          cd /var/www/flask-app
 
-          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env &&
+          if [ ! -d .git ]; then
+            git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
+          fi
 
-          git fetch --all &&
-          git reset --hard origin/staging &&
+          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
+
+          git fetch --all
+          git reset --hard origin/staging
+
+          pip3 install -r requirements.txt
+
           sudo systemctl restart flask-app
         "
 
@@ -81,23 +80,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    - name: Setup SSH Agent
-      uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
-
-    # 🔥 AUTO CREATE .env FILE HERE
     - name: Deploy to Production Server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} "
-          cd /var/www/flask-app &&
+          mkdir -p /var/www/flask-app &&
+          cd /var/www/flask-app
 
-          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env &&
+          if [ ! -d .git ]; then
+            git clone https://github.com/Avinashsain/flask-ci-cd-app.git .
+          fi
 
-          git fetch --all &&
-          git reset --hard origin/master &&
+          echo 'MONGO_URI=${{ secrets.MONGO_URI }}' > .env
+
+          git fetch --all
+          git reset --hard origin/master
+
+          pip3 install -r requirements.txt
+
           sudo systemctl restart flask-app
         "
