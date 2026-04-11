@@ -28,6 +28,7 @@ def client():
                 "_id": ObjectId("66fddff25f4b5f6a0a123456"),
                 "name": "Test Student",
                 "email": "test@student.com",
+                "address": "123 Test St",
                 "course": "Flask",
             }
         )
@@ -52,6 +53,7 @@ def test_add_student(client):
     data = {
         "name": "New User",
         "email": "new@user.com",
+        "address": "456 New St",
         "course": "Python",
     }
 
@@ -68,6 +70,7 @@ def test_update_student(client):
     data = {
         "name": "Updated Name",
         "email": "updated@student.com",
+        "address": "789 Updated St",
         "course": "Updated Course",
     }
 
@@ -89,6 +92,7 @@ def test_delete_student(client):
             {
                 "name": "Temp User",
                 "email": "temp@user.com",
+                "address": "Temp Address",
                 "course": "Temp Course",
             }
         ).inserted_id
