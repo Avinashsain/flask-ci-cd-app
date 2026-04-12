@@ -39,7 +39,10 @@ def client():
         # Cleanup after tests
         mongo.db.students.delete_many({})
 
-
+def test_example():
+    response = client.get("/")
+    assert response.status_code == 200
+    
 def test_home_page(client):
     """Test home page loads correctly"""
     response = client.get("/")
