@@ -1,23 +1,27 @@
 pipeline {
     agent any
 
+    environment {
+        MONGO_URI = credentials('mongo-uri')   // store in Jenkins credentials
+    }
+
     stages {
 
         // ---------------- CI ----------------
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/Avinashsain/flask-ci-cd-app.git'
+                git url: 'https://github.com/Avinashsain/flask-ci-cd-app.git',
+                    branch: env.BRANCH_NAME ?: 'master'
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 sh '''
-                python3 -m venv venv
-                . venv/bin/activate
-
-                pip install --upgrade pip
-                pip install -r requirements.txt pytest pylint bandit
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt pytest pylint bandit
                 '''
             }
         }
@@ -25,11 +29,9 @@ pipeline {
         stage('Lint & Security') {
             steps {
                 sh '''
-                . venv/bin/activate
-
-                pylint app.py || true
-
-                bandit -r . -x venv,tests -s B101,B104
+                    . venv/bin/activate
+                    pylint app.py || true
+                    bandit -r . -x venv,tests -s B101,B104
                 '''
             }
         }
@@ -37,8 +39,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                . venv/bin/activate
-                pytest -v
+                    . venv/bin/activate
+                    pytest -v
                 '''
             }
         }
@@ -51,34 +53,35 @@ pipeline {
             steps {
                 sshagent(['staging-ssh']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@${env.STAGING_IP} << EOF
-                    set -e
+                        ssh -o StrictHostKeyChecking=no ubuntu@${env.STAGING_IP} \
+                            APP_DIR=/var/www/flask-app \
+                            MONGO_URI='${env.MONGO_URI}' \
+                            bash -s << 'EOF'
+                        set -e
+                        echo "Deploying Staging"
 
-                    echo "🚀 Staging Deploy"
+                        sudo rm -rf "\$APP_DIR"
+                        sudo mkdir -p "\$APP_DIR"
+                        sudo chown -R ubuntu:ubuntu "\$APP_DIR"
+                        cd "\$APP_DIR"
 
-                    APP_DIR="/var/www/flask-app"
-                    sudo rm -rf \$APP_DIR
-                    sudo mkdir -p \$APP_DIR
-                    sudo chown -R ubuntu:ubuntu \$APP_DIR
-                    cd \$APP_DIR
+                        git clone -b staging https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-                    git clone -b staging https://github.com/Avinashsain/flask-ci-cd-app.git .
+                        echo "MONGO_URI=\${MONGO_URI}" > .env
 
-                    echo "MONGO_URI=${env.MONGO_URI}" > .env
+                        python3 -m venv venv
+                        . venv/bin/activate
 
-                    python3 -m venv venv
-                    source venv/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        pip install gunicorn
 
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    pip install gunicorn
+                        sudo systemctl daemon-reload
+                        sudo systemctl enable flask-app
+                        sudo systemctl restart flask-app
+                        sudo systemctl restart nginx
 
-                    sudo systemctl daemon-reload
-                    sudo systemctl enable flask-app
-                    sudo systemctl restart flask-app
-                    sudo systemctl restart nginx
-
-                    echo "✅ Staging Done"
+                        echo "Staging Done"
                     EOF
                     """
                 }
@@ -93,38 +96,49 @@ pipeline {
             steps {
                 sshagent(['prod-ssh']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@${env.PROD_IP} << EOF
-                    set -e
+                        ssh -o StrictHostKeyChecking=no ubuntu@${env.PROD_IP} \
+                            APP_DIR=/var/www/flask-app \
+                            MONGO_URI='${env.MONGO_URI}' \
+                            bash -s << 'EOF'
+                        set -e
+                        echo "Deploying Production"
 
-                    echo "🚀 Production Deploy"
+                        sudo rm -rf "\$APP_DIR"
+                        sudo mkdir -p "\$APP_DIR"
+                        sudo chown -R ubuntu:ubuntu "\$APP_DIR"
+                        cd "\$APP_DIR"
 
-                    APP_DIR="/var/www/flask-app"
-                    sudo rm -rf \$APP_DIR
-                    sudo mkdir -p \$APP_DIR
-                    sudo chown -R ubuntu:ubuntu \$APP_DIR
-                    cd \$APP_DIR
+                        git clone -b master https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-                    git clone -b master https://github.com/Avinashsain/flask-ci-cd-app.git .
+                        echo "MONGO_URI=\${MONGO_URI}" > .env
 
-                    echo "MONGO_URI=${env.MONGO_URI}" > .env
+                        python3 -m venv venv
+                        . venv/bin/activate
 
-                    python3 -m venv venv
-                    source venv/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        pip install gunicorn
 
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    pip install gunicorn
+                        sudo systemctl daemon-reload
+                        sudo systemctl enable flask-app
+                        sudo systemctl restart flask-app
+                        sudo systemctl restart nginx
 
-                    sudo systemctl daemon-reload
-                    sudo systemctl enable flask-app
-                    sudo systemctl restart flask-app
-                    sudo systemctl restart nginx
-
-                    echo "✅ Production Done"
+                        echo "Production Done"
                     EOF
                     """
                 }
             }
+        }
+    }
+
+    // ---------------- NOTIFICATIONS ----------------
+    post {
+        success {
+            echo "Pipeline passed on branch: ${env.BRANCH_NAME}"
+        }
+        failure {
+            echo "Pipeline FAILED on branch: ${env.BRANCH_NAME}"
         }
     }
 }
