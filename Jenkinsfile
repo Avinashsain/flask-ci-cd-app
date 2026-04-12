@@ -1,17 +1,12 @@
 pipeline {
     agent any
 
-    environment {
-        MONGO_URI = "mongodb://localhost:27017/testdb"
-        APP_DIR = "/var/www/flask-app"
-    }
-
     stages {
 
         // ---------------- CI ----------------
         stage('Checkout') {
             steps {
-                git branch: "staging", url: 'https://github.com/Avinashsain/flask-ci-cd-app.git'
+                git url: 'https://github.com/Avinashsain/flask-ci-cd-app.git'
             }
         }
 
@@ -32,7 +27,7 @@ pipeline {
                 sh '''
                 . venv/bin/activate
                 pylint app.py || true
-                bandit -r . -s B104,B101
+                bandit -r . -x venv,tests
                 '''
             }
         }
@@ -53,24 +48,21 @@ pipeline {
             }
             steps {
                 sshagent(['staging-ssh']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@STAGING_IP << EOF
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ubuntu@${env.STAGING_IP} << EOF
                     set -e
 
-                    APP_DIR="/var/www/flask-app"
                     echo "🚀 Staging Deploy"
 
-                    sudo rm -rf $APP_DIR
-                    sudo mkdir -p $APP_DIR
-                    sudo chown -R ubuntu:ubuntu $APP_DIR
-                    cd $APP_DIR
+                    APP_DIR="/var/www/flask-app"
+                    sudo rm -rf \$APP_DIR
+                    sudo mkdir -p \$APP_DIR
+                    sudo chown -R ubuntu:ubuntu \$APP_DIR
+                    cd \$APP_DIR
 
                     git clone -b staging https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-                    echo "MONGO_URI=${MONGO_URI}" > .env
-
-                    sudo apt update -y
-                    sudo apt install -y python3-venv python3-pip nginx
+                    echo "MONGO_URI=${env.MONGO_URI}" > .env
 
                     python3 -m venv venv
                     source venv/bin/activate
@@ -82,12 +74,11 @@ pipeline {
                     sudo systemctl daemon-reload
                     sudo systemctl enable flask-app
                     sudo systemctl restart flask-app
-
                     sudo systemctl restart nginx
 
                     echo "✅ Staging Done"
                     EOF
-                    '''
+                    """
                 }
             }
         }
@@ -99,24 +90,21 @@ pipeline {
             }
             steps {
                 sshagent(['prod-ssh']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@PROD_IP << EOF
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ubuntu@${env.PROD_IP} << EOF
                     set -e
 
-                    APP_DIR="/var/www/flask-app"
                     echo "🚀 Production Deploy"
 
-                    sudo rm -rf $APP_DIR
-                    sudo mkdir -p $APP_DIR
-                    sudo chown -R ubuntu:ubuntu $APP_DIR
-                    cd $APP_DIR
+                    APP_DIR="/var/www/flask-app"
+                    sudo rm -rf \$APP_DIR
+                    sudo mkdir -p \$APP_DIR
+                    sudo chown -R ubuntu:ubuntu \$APP_DIR
+                    cd \$APP_DIR
 
                     git clone -b master https://github.com/Avinashsain/flask-ci-cd-app.git .
 
-                    echo "MONGO_URI=${MONGO_URI}" > .env
-
-                    sudo apt update -y
-                    sudo apt install -y python3-venv python3-pip nginx
+                    echo "MONGO_URI=${env.MONGO_URI}" > .env
 
                     python3 -m venv venv
                     source venv/bin/activate
@@ -128,12 +116,11 @@ pipeline {
                     sudo systemctl daemon-reload
                     sudo systemctl enable flask-app
                     sudo systemctl restart flask-app
-
                     sudo systemctl restart nginx
 
                     echo "✅ Production Done"
                     EOF
-                    '''
+                    """
                 }
             }
         }
