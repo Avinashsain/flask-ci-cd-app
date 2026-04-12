@@ -1,4 +1,4 @@
-# Flask CI/CD Deployment with Nginx & Gunicorn
+# Flask CI/CD Deployment with  Nginx & Gunicorn
 
 This project demonstrates a complete **CI/CD pipeline** using GitHub Actions to deploy a Flask application on an EC2 server using **Gunicorn + Nginx**.
 
@@ -34,6 +34,7 @@ flask-app/
 │── .github/workflows/deploy.yml
 │── start_flask.sh
 │── test_app.py
+│── Jenkinsfile
 ```
 
 ![Project Structure](/screenshots/project-structure.png)
@@ -245,6 +246,41 @@ sudo fuser -k 5000/tcp
 ✔ CI/CD fully automated
 ✔ Flask app deployed
 ✔ Nginx reverse proxy working
+
+---
+
+# Jenkins CI/CD Pipeline
+
+## 🔹 Stages
+
+- Install Dependencies
+- Lint & Security (pylint + bandit)
+- Run Tests (pytest)
+- Deploy Staging (branch: staging)
+- Deploy Production (branch: master)
+
+---
+
+## 🔐 Jenkins Credentials
+
+| ID          | Type        |
+|-------------|------------|
+| staging-ssh | SSH Key     |
+| prod-ssh    | SSH Key     |
+| MONGO_URI   | Secret Text |
+| STAGING_IP  | Secret Text |
+| PROD_IP     | Secret Text |
+
+![Jenkins Credentials](screenshots/jenkins-credentials.png)
+
+---
+
+## 📸 Jenkins Screenshots
+
+![Jenkins Dashboard](screenshots/jenkins-dashboard.png)  
+![Pipeline Run](screenshots/pipeline-run.png)  
+![Console Output](screenshots/console-output.png)  
+![Build Success](screenshots/build-success.png)
 
 ---
 
