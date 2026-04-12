@@ -25,7 +25,7 @@ pipeline {
                 sh '''
                     . venv/bin/activate
                     pylint app.py || true
-                    bandit -r . -x venv,tests -s B101,B104
+                    bandit -r . --exclude ./venv,./tests -s B101,B104
                 '''
             }
         }
@@ -58,7 +58,6 @@ pipeline {
                         cd "\$APP_DIR"
 
                         git clone -b staging https://github.com/Avinashsain/flask-ci-cd-app.git .
-
                         echo "MONGO_URI=\${MONGO_URI}" > .env
 
                         python3 -m venv venv
@@ -97,7 +96,6 @@ EOF
                         cd "\$APP_DIR"
 
                         git clone -b master https://github.com/Avinashsain/flask-ci-cd-app.git .
-
                         echo "MONGO_URI=\${MONGO_URI}" > .env
 
                         python3 -m venv venv
