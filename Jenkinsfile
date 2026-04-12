@@ -46,11 +46,10 @@ pipeline {
             steps {
                 sshagent(['staging-ssh']) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ubuntu@$STAGING_IP \
-                            APP_DIR=/var/www/flask-app \
-                            MONGO_URI="$MONGO_URI" \
-                            bash -s << 'EOF'
+                        ssh -o StrictHostKeyChecking=no ubuntu@$STAGING_IP bash -s << 'ENDSSH'
                         set -e
+
+                        APP_DIR=/var/www/flask-app
 
                         echo "Deploying Staging"
 
@@ -66,7 +65,14 @@ pipeline {
 
                         cd "$APP_DIR"
 
-                        echo "MONGO_URI=${MONGO_URI}" > .env
+                        # Only create .env if it does not exist
+                        if [ ! -f ".env" ]; then
+                            echo "ERROR: .env file missing! Please create it manually on server"
+                            exit 1
+                        fi
+
+                        echo "Current .env contents:"
+                        cat .env
 
                         python3 -m venv venv
                         . venv/bin/activate
@@ -79,7 +85,7 @@ pipeline {
                         sudo systemctl restart nginx
 
                         echo "Staging Done"
-EOF
+                    ENDSSH
                     '''
                 }
             }
@@ -92,11 +98,10 @@ EOF
             steps {
                 sshagent(['prod-ssh']) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ubuntu@$PROD_IP \
-                            APP_DIR=/var/www/flask-app \
-                            MONGO_URI="$MONGO_URI" \
-                            bash -s << 'EOF'
+                        ssh -o StrictHostKeyChecking=no ubuntu@$PROD_IP bash -s << 'ENDSSH'
                         set -e
+
+                        APP_DIR=/var/www/flask-app
 
                         echo "Deploying Production"
 
@@ -112,7 +117,14 @@ EOF
 
                         cd "$APP_DIR"
 
-                        echo "MONGO_URI=${MONGO_URI}" > .env
+                        # Only create .env if it does not exist
+                        if [ ! -f ".env" ]; then
+                            echo "ERROR: .env file missing! Please create it manually on server"
+                            exit 1
+                        fi
+
+                        echo "Current .env contents:"
+                        cat .env
 
                         python3 -m venv venv
                         . venv/bin/activate
@@ -125,7 +137,7 @@ EOF
                         sudo systemctl restart nginx
 
                         echo "Production Done"
-EOF
+                    ENDSSH
                     '''
                 }
             }

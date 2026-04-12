@@ -21,9 +21,13 @@ def create_app():
     app = Flask(__name__)
 
     # Configuration
-    app.config["MONGO_URI"] = os.getenv(
-        "MONGO_URI", "mongodb://localhost:27017/test"
-    )
+    mongo_uri = os.getenv("MONGO_URI")
+
+    if not mongo_uri:
+        raise ValueError("MONGO_URI environment variable is not set!")
+
+    app.config["MONGO_URI"] = mongo_uri
+    
     app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
 
     mongo.init_app(app)
