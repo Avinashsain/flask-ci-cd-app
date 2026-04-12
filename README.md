@@ -277,10 +277,16 @@ sudo fuser -k 5000/tcp
 
 ## 📸 Jenkins Screenshots
 
-![Jenkins Dashboard](screenshots/jenkins-dashboard.png)  
-![Pipeline Run](screenshots/pipeline-run.png)  
-![Console Output](screenshots/console-output.png)  
-![Build Success](screenshots/build-success.png)
+![Jenkins Dashboard](screenshots/flask-multibranch.png)  
+![Pipeline Run](screenshots/pipeline-run-prod.png)  
+![Console Output](screenshots/console-output-prod.png)  
+![Build Success](screenshots/build-success-prod.png)
+![Pipeline Run](screenshots/pipeline-run-staging.png)  
+![Console Output](screenshots/console-output-staging.png)  
+![Build Success](screenshots/build-success-staging.png)
+![Console Output](screenshots/webhooks.png)  
+![Build Success](screenshots/manage-webhook-settings.png)
+![Build Success](screenshots/recent-deliveries.png)
 
 ---
 
