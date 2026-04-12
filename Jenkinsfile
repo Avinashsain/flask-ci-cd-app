@@ -65,13 +65,12 @@ pipeline {
 
                         cd "$APP_DIR"
 
-                        # Only create .env if it does not exist
                         if [ ! -f ".env" ]; then
-                            echo "ERROR: .env file missing! Please create it manually on server"
+                            echo "ERROR: .env file missing! Create it manually on server"
                             exit 1
                         fi
 
-                        echo "Current .env contents:"
+                        echo "Current .env:"
                         cat .env
 
                         python3 -m venv venv
@@ -85,7 +84,7 @@ pipeline {
                         sudo systemctl restart nginx
 
                         echo "Staging Done"
-                    ENDSSH
+                        ENDSSH
                     '''
                 }
             }
@@ -117,13 +116,12 @@ pipeline {
 
                         cd "$APP_DIR"
 
-                        # Only create .env if it does not exist
                         if [ ! -f ".env" ]; then
-                            echo "ERROR: .env file missing! Please create it manually on server"
+                            echo "ERROR: .env file missing! Create it manually on server"
                             exit 1
                         fi
 
-                        echo "Current .env contents:"
+                        echo "Current .env:"
                         cat .env
 
                         python3 -m venv venv
@@ -137,7 +135,7 @@ pipeline {
                         sudo systemctl restart nginx
 
                         echo "Production Done"
-                    ENDSSH
+                        ENDSSH
                     '''
                 }
             }

@@ -24,10 +24,9 @@ def create_app():
     mongo_uri = os.getenv("MONGO_URI")
 
     if not mongo_uri:
-        raise ValueError("MONGO_URI environment variable is not set!")
+        raise ValueError("MONGO_URI is not set! Check your .env file")
 
     app.config["MONGO_URI"] = mongo_uri
-    
     app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
 
     mongo.init_app(app)
@@ -94,4 +93,4 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=False)
