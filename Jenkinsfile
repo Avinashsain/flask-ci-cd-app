@@ -54,14 +54,23 @@ if [ ! -d "$APP_DIR" ]; then
     sudo mkdir -p "$APP_DIR"
     sudo chown -R ubuntu:ubuntu "$APP_DIR"
     git clone -b staging https://github.com/Avinashsain/flask-ci-cd-app.git "$APP_DIR"
+    cd "$APP_DIR"
 else
     cd "$APP_DIR"
+    if [ -f ".env" ]; then
+        cp .env /tmp/flask_app_env_backup
+        echo "Backed up .env"
+    fi
     git fetch origin
     git reset --hard origin/staging
+    if [ -f "/tmp/flask_app_env_backup" ]; then
+        cp /tmp/flask_app_env_backup .env
+        echo "Restored .env"
+    fi
 fi
 cd "$APP_DIR"
 if [ ! -f ".env" ]; then
-    echo "ERROR: .env missing! Create it manually on server"
+    echo "ERROR: .env missing!"
     exit 1
 fi
 echo "Current .env:"
@@ -96,14 +105,23 @@ if [ ! -d "$APP_DIR" ]; then
     sudo mkdir -p "$APP_DIR"
     sudo chown -R ubuntu:ubuntu "$APP_DIR"
     git clone -b master https://github.com/Avinashsain/flask-ci-cd-app.git "$APP_DIR"
+    cd "$APP_DIR"
 else
     cd "$APP_DIR"
+    if [ -f ".env" ]; then
+        cp .env /tmp/flask_app_env_backup
+        echo "Backed up .env"
+    fi
     git fetch origin
     git reset --hard origin/master
+    if [ -f "/tmp/flask_app_env_backup" ]; then
+        cp /tmp/flask_app_env_backup .env
+        echo "Restored .env"
+    fi
 fi
 cd "$APP_DIR"
 if [ ! -f ".env" ]; then
-    echo "ERROR: .env missing! Create it manually on server"
+    echo "ERROR: .env missing!"
     exit 1
 fi
 echo "Current .env:"
