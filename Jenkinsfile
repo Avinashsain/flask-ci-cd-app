@@ -45,20 +45,28 @@ pipeline {
             }
             steps {
                 sshagent(['staging-ssh']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@${env.STAGING_IP} \
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ubuntu@$STAGING_IP \
                             APP_DIR=/var/www/flask-app \
-                            MONGO_URI='${env.MONGO_URI}' \
+                            MONGO_URI="$MONGO_URI" \
                             bash -s << 'EOF'
                         set -e
 
-                        sudo rm -rf "\$APP_DIR"
-                        sudo mkdir -p "\$APP_DIR"
-                        sudo chown -R ubuntu:ubuntu "\$APP_DIR"
-                        cd "\$APP_DIR"
+                        echo "Deploying Staging"
 
-                        git clone -b staging https://github.com/Avinashsain/flask-ci-cd-app.git .
-                        echo "MONGO_URI=\${MONGO_URI}" > .env
+                        if [ ! -d "$APP_DIR" ]; then
+                            sudo mkdir -p "$APP_DIR"
+                            sudo chown -R ubuntu:ubuntu "$APP_DIR"
+                            git clone -b staging https://github.com/Avinashsain/flask-ci-cd-app.git "$APP_DIR"
+                        else
+                            cd "$APP_DIR"
+                            git fetch origin
+                            git reset --hard origin/staging
+                        fi
+
+                        cd "$APP_DIR"
+
+                        echo "MONGO_URI=${MONGO_URI}" > .env
 
                         python3 -m venv venv
                         . venv/bin/activate
@@ -72,7 +80,7 @@ pipeline {
 
                         echo "Staging Done"
 EOF
-                    """
+                    '''
                 }
             }
         }
@@ -83,20 +91,28 @@ EOF
             }
             steps {
                 sshagent(['prod-ssh']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@${env.PROD_IP} \
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ubuntu@$PROD_IP \
                             APP_DIR=/var/www/flask-app \
-                            MONGO_URI='${env.MONGO_URI}' \
+                            MONGO_URI="$MONGO_URI" \
                             bash -s << 'EOF'
                         set -e
 
-                        sudo rm -rf "\$APP_DIR"
-                        sudo mkdir -p "\$APP_DIR"
-                        sudo chown -R ubuntu:ubuntu "\$APP_DIR"
-                        cd "\$APP_DIR"
+                        echo "Deploying Production"
 
-                        git clone -b master https://github.com/Avinashsain/flask-ci-cd-app.git .
-                        echo "MONGO_URI=\${MONGO_URI}" > .env
+                        if [ ! -d "$APP_DIR" ]; then
+                            sudo mkdir -p "$APP_DIR"
+                            sudo chown -R ubuntu:ubuntu "$APP_DIR"
+                            git clone -b master https://github.com/Avinashsain/flask-ci-cd-app.git "$APP_DIR"
+                        else
+                            cd "$APP_DIR"
+                            git fetch origin
+                            git reset --hard origin/master
+                        fi
+
+                        cd "$APP_DIR"
+
+                        echo "MONGO_URI=${MONGO_URI}" > .env
 
                         python3 -m venv venv
                         . venv/bin/activate
@@ -110,10 +126,11 @@ EOF
 
                         echo "Production Done"
 EOF
-                    """
+                    '''
                 }
             }
         }
+
     }
 
     post {
