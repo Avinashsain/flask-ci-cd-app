@@ -2,18 +2,12 @@ pipeline {
     agent any
 
     environment {
-        MONGO_URI = credentials('mongo-uri')   // store in Jenkins credentials
+        MONGO_URI  = credentials('MONGO_URI')
+        STAGING_IP = credentials('STAGING_IP')
+        PROD_IP    = credentials('PROD_IP')
     }
 
     stages {
-
-        // ---------------- CI ----------------
-        stage('Checkout') {
-            steps {
-                git url: 'https://github.com/Avinashsain/flask-ci-cd-app.git',
-                    branch: env.BRANCH_NAME ?: 'master'
-            }
-        }
 
         stage('Install Dependencies') {
             steps {
@@ -45,7 +39,6 @@ pipeline {
             }
         }
 
-        // ---------------- STAGING ----------------
         stage('Deploy Staging') {
             when {
                 branch 'staging'
@@ -58,7 +51,6 @@ pipeline {
                             MONGO_URI='${env.MONGO_URI}' \
                             bash -s << 'EOF'
                         set -e
-                        echo "Deploying Staging"
 
                         sudo rm -rf "\$APP_DIR"
                         sudo mkdir -p "\$APP_DIR"
@@ -71,10 +63,8 @@ pipeline {
 
                         python3 -m venv venv
                         . venv/bin/activate
-
                         pip install --upgrade pip
-                        pip install -r requirements.txt
-                        pip install gunicorn
+                        pip install -r requirements.txt gunicorn
 
                         sudo systemctl daemon-reload
                         sudo systemctl enable flask-app
@@ -82,13 +72,12 @@ pipeline {
                         sudo systemctl restart nginx
 
                         echo "Staging Done"
-                    EOF
+EOF
                     """
                 }
             }
         }
 
-        // ---------------- PRODUCTION ----------------
         stage('Deploy Production') {
             when {
                 branch 'master'
@@ -101,7 +90,6 @@ pipeline {
                             MONGO_URI='${env.MONGO_URI}' \
                             bash -s << 'EOF'
                         set -e
-                        echo "Deploying Production"
 
                         sudo rm -rf "\$APP_DIR"
                         sudo mkdir -p "\$APP_DIR"
@@ -114,10 +102,8 @@ pipeline {
 
                         python3 -m venv venv
                         . venv/bin/activate
-
                         pip install --upgrade pip
-                        pip install -r requirements.txt
-                        pip install gunicorn
+                        pip install -r requirements.txt gunicorn
 
                         sudo systemctl daemon-reload
                         sudo systemctl enable flask-app
@@ -125,14 +111,13 @@ pipeline {
                         sudo systemctl restart nginx
 
                         echo "Production Done"
-                    EOF
+EOF
                     """
                 }
             }
         }
     }
 
-    // ---------------- NOTIFICATIONS ----------------
     post {
         success {
             echo "Pipeline passed on branch: ${env.BRANCH_NAME}"
