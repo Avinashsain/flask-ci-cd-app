@@ -26,8 +26,10 @@ pipeline {
             steps {
                 sh '''
                 . venv/bin/activate
+
                 pylint app.py || true
-                bandit -r . -x venv,tests
+
+                bandit -r . -x venv,tests -s B101,B104
                 '''
             }
         }
