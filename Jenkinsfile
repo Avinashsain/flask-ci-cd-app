@@ -136,10 +136,18 @@ pipeline {
     }
     post {
         success {
-            echo "Pipeline passed on branch: ${env.BRANCH_NAME}"
+            emailext (
+                to: 'avinashsain65+1@gmail.com',
+                subject: 'SUCCESS: Build ${BUILD_NUMBER} on ${BRANCH_NAME}',
+                body: 'Build succeeded! Check: ${BUILD_URL} on branch ${BRANCH_NAME}'
+            )
         }
         failure {
-            echo "Pipeline FAILED on branch: ${env.BRANCH_NAME}"
+            emailext (
+                to: 'avinashsain65+1@gmail.com',
+                subject: 'FAILED: Build ${BUILD_NUMBER} on ${BRANCH_NAME}',
+                body: 'Build failed! Check: ${BUILD_URL} on branch ${BRANCH_NAME}'
+            )
         }
     }
 }
