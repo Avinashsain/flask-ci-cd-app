@@ -261,7 +261,7 @@ sudo fuser -k 5000/tcp
 
 ---
 
-## 🔐 Jenkins Credentials
+## Jenkins Credentials
 
 | ID          | Type        |
 |-------------|------------|
@@ -275,7 +275,7 @@ sudo fuser -k 5000/tcp
 
 ---
 
-## 📸 Jenkins Screenshots
+## Jenkins Screenshots
 
 ![Jenkins Dashboard](screenshots/flask-multibranch.png)  
 ![Pipeline Run](screenshots/pipeline-run-prod.png)  
