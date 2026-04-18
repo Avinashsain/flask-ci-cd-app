@@ -138,15 +138,19 @@ pipeline {
         success {
             emailext (
                 to: 'avinashsain65@gmail.com',
-                subject: 'SUCCESS: Build ${BUILD_NUMBER} on ${BRANCH_NAME}',
-                body: 'Build succeeded! Check: ${BUILD_URL} on branch ${BRANCH_NAME}'
+                subject: "FAILED: Build ${BUILD_NUMBER}",
+                body: "Build failed! Check: ${BUILD_URL}",
+                replyTo: 'avinashsain65@gmail.com',
+                from: 'avinashsain65@gmail.com'
             )
         }
         failure {
             emailext (
                 to: 'avinashsain65@gmail.com',
-                subject: 'FAILED: Build ${BUILD_NUMBER} on ${BRANCH_NAME}',
-                body: 'Build failed! Check: ${BUILD_URL} on branch ${BRANCH_NAME}'
+                subject: "FAILED: Build ${BUILD_NUMBER}",
+                body: "Build failed! Check: ${BUILD_URL}",
+                replyTo: 'avinashsain65@gmail.com',
+                from: 'avinashsain65@gmail.com'
             )
         }
     }
